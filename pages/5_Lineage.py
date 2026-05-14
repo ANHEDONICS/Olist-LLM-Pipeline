@@ -1,6 +1,6 @@
-"""Page 5 — Data Lineage"""
 import json
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 from pathlib import Path
 
@@ -15,12 +15,25 @@ opts = [f"Batch #{i+1} — {b['batch_id']} ({b['status']})" for i,b in enumerate
 idx = st.selectbox("Select batch:", range(len(opts)), format_func=lambda i: opts[i], index=len(opts)-1)
 sel = hist[idx]
 
+def render_mermaid(code: str):
+    components.html(
+        f"""
+        <pre class="mermaid">
+            {code}
+        </pre>
+        <script type="module">
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+            mermaid.initialize({{ startOnLoad: true, theme: 'dark' }});
+        </script>
+        """,
+        height=350,
+    )
+
 # ── Lineage Flow Diagram ───────────────────────────────────────
 st.markdown("### 🗺️ Table-Level Lineage")
 raw = sel.get("raw_rows",0); clean = sel.get("clean_rows",0); masked = sel.get("masked_rows",0)
 
-st.markdown(f"""
-```mermaid
+lineage_code = f"""
 graph LR
     RAW["RAW_OLIST_CUSTOMERS<br/>{raw} rows"] -->|Transform + Dedup| SILVER["SILVER_CUSTOMERS_CLEAN<br/>{clean} rows"]
     SILVER -->|PII Masking| MASKED["SILVER_CUSTOMERS_MASKED<br/>{masked} rows"]
@@ -32,8 +45,8 @@ graph LR
     style MASKED fill:#4c1d95,color:#ddd6fe
     style GOLD fill:#854d0e,color:#fef9c3
     style AUDIT fill:#1e3a5f,color:#bfdbfe
-```
-""")
+"""
+render_mermaid(lineage_code)
 
 # ── Column-Level Lineage ───────────────────────────────────────
 st.divider()

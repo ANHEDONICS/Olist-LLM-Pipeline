@@ -4,6 +4,7 @@ Olist LLM Pipeline — Enterprise Dashboard
 """
 import os, json, datetime, subprocess, time
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -66,6 +67,20 @@ def load_hist():
     p=Path("metadata/batch_history.json")
     return json.load(open(p)) if p.exists() else []
 
+def render_mermaid(code: str):
+    components.html(
+        f"""
+        <pre class="mermaid">
+            {code}
+        </pre>
+        <script type="module">
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+            mermaid.initialize({{ startOnLoad: true, theme: 'dark' }});
+        </script>
+        """,
+        height=400,
+    )
+
 # ── Data ────────────────────────────────────────────────────────
 hist = load_hist()
 raw_df = qry("SELECT COUNT(*) AS CNT FROM RAW_OLIST_CUSTOMERS")
@@ -106,7 +121,6 @@ st.markdown(f"""<div class="kpi-row">
 st.markdown('<div class="sec">🔄 Pipeline Architecture</div>', unsafe_allow_html=True)
 
 flow = """
-```mermaid
 graph LR
     GEN[Generate Data] --> P[Profile]
     P --> BI[Inspector]
@@ -122,9 +136,8 @@ graph LR
     GK --> LT[Lineage]
     LT --> AW[Audit]
     AW --> AL[Alert]
-```
 """
-st.markdown(flow)
+render_mermaid(flow)
 
 # ── Batch History ───────────────────────────────────────────────
 if hist:
